@@ -1,6 +1,8 @@
 ﻿# BloodHound_E2J
 
 BloodHoundのクエリを日本語化するスクリプト
+Kali Linuxを想定しています。
+![](./img.png)
 
 前提
 ```
