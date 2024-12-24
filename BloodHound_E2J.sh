@@ -3,6 +3,10 @@
 PrebuiltQueries_Path="/usr/lib/bloodhound/resources/app/src/components/SearchContainer/Tabs/PrebuiltQueries.json"
 CustomQueries_Path="~/.config/bloodhound/CustomQueries.json"
 
+# pre 
+mkdir -p ~/.config/bloodhound/
+mkdir backups
+
 # BackUp
 cp $PrebuiltQueries_Path ./backups/PrebuiltQueries.json
 cp $CustomQueries_Path ./backups/CustomQueries.json
