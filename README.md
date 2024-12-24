@@ -2,6 +2,11 @@
 
 BloodHoundのクエリを日本語化するスクリプト
 
+前提
+```
+sudo apt install bloodhound
+```
+
 実行（backupを取得）
 ```
 git clone https://github.com/veritas-rt/BloodHound_E2J.git
