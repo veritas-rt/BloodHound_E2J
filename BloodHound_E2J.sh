@@ -13,5 +13,5 @@ cp $CustomQueries_Path ./backups/CustomQueries.json
 
 # OverWrite
 sudo cp ./queries/PrebuiltQueries.json $PrebuiltQueries_Path
-cp ./queries/customQueries.json $CustomQueries_Path
+cp ./queries/CustomQueries.json $CustomQueries_Path
 
