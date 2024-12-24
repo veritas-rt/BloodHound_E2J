@@ -1,0 +1,389 @@
+{
+    "queries": [
+        {
+            "name": "ドメイン管理者をすべて見つける",
+            "category": "Domain Information",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH p=(n:Group)<-[:MemberOf*1..]-(m) WHERE n.objectid =~ $name RETURN p",
+                    "props": {
+                        "name": "(?i)S-1-5-.*-512"
+                    },
+                    "allowCollapse": false
+                }
+            ]
+        },
+        {
+            "name": "ドメイン信頼関係をマップする",
+            "category": "Domain Information",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH p=(n:Domain)-->(m:Domain) RETURN p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "サポートされていないオペレーティングシステムを持つコンピューターを見つける",
+            "category": "Domain Information",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH (n:Computer) WHERE n.operatingsystem =~ \"(?i).*(2000|2003|2008|xp|vista|7|me).*\" RETURN n",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "DCSync 権限を持つプリンシパルを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain...",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=()-[:DCSync|AllExtendedRights|GenericAll]->(:Domain {name: $result}) RETURN p",
+                    "allowCollapse": true,
+                    "endNode": "{}"
+                }
+            ]
+        },
+        {
+            "name": "外部のドメイングループに所属するユーザーを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select source domain...",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=(n:User)-[:MemberOf]->(m:Group) WHERE n.domain=$result AND m.domain<>n.domain RETURN p",
+                    "startNode": "{}",
+                    "allowCollapse": false
+                }
+            ]
+        },
+        {
+            "name": "外部のドメイングループに所属するグループを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select source domain...",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=(n:Group {domain:$result})-[:MemberOf]->(m:Group) WHERE m.domain<>n.domain AND n.name<>m.name RETURN p",
+                    "startNode": "{}",
+                    "allowCollapse": false
+                }
+            ]
+        },
+        {
+            "name": "ドメインユーザーがローカル管理者であるコンピューターを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Users Group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid ENDS WITH \"-513\" RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=(m:Group {name:$result})-[:AdminTo]->(n:Computer) RETURN p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "ドメインユーザーが LAPS パスワードを読むことができるコンピューターを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Users Group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid ENDS WITH '-513' RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=(Group {name:$result})-[:MemberOf*0..]->(g:Group)-[:AllExtendedRights|ReadLAPSPassword]->(n:Computer) RETURN p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "ドメインユーザーから高価値ターゲットまでのすべてのパスを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Users Group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid ENDS WITH \"-513\" RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((g:Group {name:$result})-[*1..]->(n {highvalue:true})) WHERE g<>n return p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "ドメインユーザーが RDP できるワークステーションを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Users Group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid ENDS WITH \"-513\" RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "match p=(g:Group {name:$result})-[:CanRDP]->(c:Computer) where NOT c.operatingsystem CONTAINS \"Server\" return p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "ドメインユーザーが RDP できるサーバーを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Users Group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid ENDS WITH \"-513\" RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=(g:Group {name:$result})-[:CanRDP]->(c:Computer) WHERE c.operatingsystem CONTAINS \"Server\" return p",
+                    "allowCollapse": false
+                }
+            ]
+        },
+        {
+            "name": "ドメインユーザーグループに対する危険な特権を見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Users Group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid ENDS WITH \"-513\" RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=(m:Group)-[:Owns|WriteDacl|GenericAll|WriteOwner|ExecuteDCOM|GenericWrite|AllowedToDelegate|ForceChangePassword]->(n:Computer) WHERE m.objectid ENDS WITH \"-513\" RETURN p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "非ドメインコントローラーへのドメイン管理者のログオンを見つける",
+            "category": "Dangerous Privileges",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH (dc)-[r:MemberOf*0..]->(g:Group) WHERE g.objectid ENDS WITH '-516' WITH COLLECT(dc) AS exclude MATCH p = (c:Computer)-[n:HasSession]->(u:User)-[r2:MemberOf*1..]->(g:Group) WHERE  g.objectid ENDS WITH '-512' AND NOT c IN exclude RETURN p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "高価値グループの Kerberoast できるメンバーを見つける",
+            "category": "Kerberos Interaction",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((n:User)-[:MemberOf]->(g:Group)) WHERE g.highvalue=true AND n.hasspn=true RETURN p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "Kerberoast できるすべてのアカウントをリストする",
+            "category": "Kerberos Interaction",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH (n:User)WHERE n.hasspn=true RETURN n",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "最も特権のある Kerberoast できるユーザーを見つける",
+            "category": "Kerberos Interaction",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH (u:User {hasspn:true}) OPTIONAL MATCH (u)-[:AdminTo]->(c1:Computer) OPTIONAL MATCH (u)-[:MemberOf*1..]->(:Group)-[:AdminTo]->(c2:Computer) WITH u,COLLECT(c1) + COLLECT(c2) AS tempVar UNWIND tempVar AS comps RETURN u,COUNT(DISTINCT(comps)) ORDER BY COUNT(DISTINCT(comps)) DESC",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "AS-REP Roast できるユーザーを見つける（Pre-Authentication が必要ない）",
+            "category": "Kerberos Interaction",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH (u:User {dontreqpreauth: true}) RETURN u",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "制約のない委任システム(Delegation)への最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": true,
+                    "query": "MATCH (n) MATCH p=shortestPath((n)-[:{}*1..]->(m:Computer {unconstraineddelegation: true})) WHERE NOT n=m RETURN p"
+                }
+            ]
+        },
+        {
+            "name": "Kerberoast 可能なユーザーからの最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a domain...",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": false,
+                    "title": "Select a user",
+                    "query": "MATCH (n:User) WHERE n.domain=$result AND n.hasspn=true RETURN n.name, n.pwdlastset ORDER BY n.pwdlastset ASC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((a:User {name:$result})-[:{}*1..]->(b:Computer)) RETURN p",
+                    "startNode": "{}",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "Kerberoast 可能なユーザーからドメイン管理者への最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Admin group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid =~ $name RETURN n.name ORDER BY n.name DESC",
+                    "props": {
+                        "name": "(?i)S-1-5-.*-512"
+                    }
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((n:User {hasspn:true})-[:{}*1..]->(m:Group {name:$result})) RETURN p",
+                    "allowCollapse": true,
+                    "endNode": "{}"
+                }
+            ]
+        },
+        {
+            "name": "所有されたプリンシパルからの最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a domain...",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": false,
+                    "title": "Select a user",
+                    "query": "MATCH (n) WHERE n.domain=$result AND n.owned=true RETURN n.name, n.PwdLastSet ORDER BY n.PwdLastSet ASC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((a {name:$result})-[:{}*1..]->(b:Computer)) WHERE NOT a=b RETURN p",
+                    "startNode": "{}",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "所有されたプリンシパルからドメイン管理者への最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Admin group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid =~ $name RETURN n.name ORDER BY n.name DESC",
+                    "props": {
+                        "name": "(?i)S-1-5-.*-512"
+                    }
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((n {owned:true})-[:{}*1..]->(m:Group {name:$result})) WHERE NOT n=m RETURN p",
+                    "allowCollapse": true,
+                    "endNode": "{}"
+                }
+            ]
+        },
+        {
+            "name": "高価値ターゲットまでの最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((n)-[*1..]->(m {highvalue:true})) WHERE m.domain=$result AND m<>n RETURN p",
+                    "allowCollapse": true,
+                    "endNode": "{}"
+                }
+            ]
+        },
+        {
+            "name": "ドメインユーザーから高価値ターゲットへの最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Users Group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid ENDS WITH \"-513\" RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((g:Group {name:$result})-[*1..]->(n {highvalue:true})) WHERE g.objectid ENDS WITH \"-513\" AND g<>n return p",
+                    "allowCollapse": true
+                }
+            ]
+        },
+        {
+            "name": "ドメイン管理者への最短パスを見つける",
+            "category": "Shortest Paths",
+            "queryList": [
+                {
+                    "final": false,
+                    "title": "Select a Domain Admin group...",
+                    "query": "MATCH (n:Group) WHERE n.objectid =~ $name RETURN n.name ORDER BY n.name DESC",
+                    "props": {
+                        "name": "(?i)S-1-5-.*-512"
+                    }
+                },
+                {
+                    "final": true,
+                    "query": "MATCH p=shortestPath((n)-[:{}*1..]->(m:Group {name:$result})) WHERE NOT n=m RETURN p",
+                    "allowCollapse": true,
+                    "endNode": "{}"
+                }
+            ]
+        }
+    ]
+}
